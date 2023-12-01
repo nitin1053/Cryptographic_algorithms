@@ -1,0 +1,269 @@
+# Playfair cipher
+def generate_playfair_matrix(key):
+    key = key.replace("J", "I").upper()
+    key_set = set(key)
+    alphabet = "ABCDEFGHIKLMNOPQRSTUVWXYZ"
+    remaining_chars = "".join(char for char in alphabet if char not in key_set)
+    key += remaining_chars
+
+    matrix = [list(key[i:i + 5]) for i in range(0, 25, 5)]
+    return matrix
+
+def find_position(matrix, char):
+    char = char.replace("J", "I").upper()
+    
+    for i in range(5):
+        for j in range(5):
+            if matrix[i][j] == char:
+                return i, j
+    raise ValueError(f"Character '{char}' not found in the matrix.")
+
+def encrypt_playfair(plaintext, key):
+    matrix = generate_playfair_matrix(key)
+    plaintext = plaintext.replace("J", "I").upper()
+    
+    pairs = [plaintext[i:i + 2] for i in range(0, len(plaintext), 2)]
+
+    ciphertext = ""
+    for pair in pairs:
+        if len(pair) == 1:
+            pair += "X"  # Add an 'X' if the last pair has only one character
+        row1, col1 = find_position(matrix, pair[0])
+        row2, col2 = find_position(matrix, pair[1])
+
+        if row1 == row2:
+            ciphertext += matrix[row1][(col1 + 1) % 5] + matrix[row2][(col2 + 1) % 5]
+        elif col1 == col2:
+            ciphertext += matrix[(row1 + 1) % 5][col1] + matrix[(row2 + 1) % 5][col2]
+        else:
+            ciphertext += matrix[row1][col2] + matrix[row2][col1]
+
+    return ciphertext
+def decrypt_playfair(ciphertext, key):
+    
+    matrix = generate_playfair_matrix(key)
+    ciphertext = ciphertext.replace("J", "I").upper()
+    pairs = [ciphertext[i:i + 2] for i in range(0, len(ciphertext), 2)]
+
+    plaintext = ""
+    for pair in pairs:
+        row1, col1 = find_position(matrix, pair[0])
+        row2, col2 = find_position(matrix, pair[1])
+
+        if row1 == row2:
+            plaintext += matrix[row1][(col1 - 1) % 5] + matrix[row2][(col2 - 1) % 5]
+        elif col1 == col2:
+            plaintext += matrix[(row1 - 1) % 5][col1] + matrix[(row2 - 1) % 5][col2]
+        else:
+            plaintext += matrix[row1][col2] + matrix[row2][col1]
+
+    return plaintext
+
+
+# Using the same key and ciphertext
+
+
+
+
+key = "hello roonie"
+plaintext = "attack"
+
+ciphertext = encrypt_playfair(plaintext, key)
+print(f"Plaintext: {plaintext}")
+print(f"Ciphertext: {ciphertext}")
+decrypted_text = decrypt_playfair(ciphertext, key)
+print(f"Decrypted Text: {decrypted_text}")
+
+
+
+# Hill cipher
+keyMatrix = [[0] * 3 for i in range(3)]
+messageVector = [[0] for i in range(3)]
+cipherMatrix = [[0] for i in range(3)]
+
+def getKeyMatrix(key):
+    k = 0
+    for i in range(3):
+        for j in range(3):
+            keyMatrix[i][j] = ord(key[k]) % 65
+            k += 1
+
+def encrypt(messageVector):
+    for i in range(3):
+        for j in range(1):
+            cipherMatrix[i][j] = 0
+            for x in range(3):
+                cipherMatrix[i][j] += (keyMatrix[i][x] * messageVector[x][j])
+            cipherMatrix[i][j] = cipherMatrix[i][j] % 26
+
+def HillCipher(message, key):
+    getKeyMatrix(key)
+    for i in range(3):
+        messageVector[i][0] = ord(message[i]) % 65
+    encrypt(messageVector)
+
+    CipherText = []
+    for i in range(3):
+        CipherText.append(chr(cipherMatrix[i][0] + 65))
+
+    print("Ciphertext: ", "".join(CipherText))
+
+def main():
+    message = "ACT"
+    key = "GYBNQKURP"
+    HillCipher(message, key)
+
+if __name__ == "__main__":
+    main()
+
+
+# Vighnere cipher
+def generateKey(string, key):
+    key = list(key)
+    if len(string) == len(key):
+        return(key)
+    else:
+        for i in range(len(string) - len(key)):
+            key.append(key[i % len(key)])
+    return("".join(key))
+
+def cipherText(string, key):
+    cipher_text = []
+    for i in range(len(string)):
+        x = (ord(string[i]) + ord(key[i])) % 26
+        x += ord('A')
+        cipher_text.append(chr(x))
+    return("".join(cipher_text))
+
+def originalText(cipher_text, key):
+    orig_text = []
+    for i in range(len(cipher_text)):
+        x = (ord(cipher_text[i]) - ord(key[i]) + 26) % 26
+        x += ord('A')
+        orig_text.append(chr(x))
+    return("".join(orig_text))
+
+if __name__ == "__main__":
+    string = "hello all"
+    keyword = "AYUSH"
+    key = generateKey(string, keyword)
+    cipher_text = cipherText(string, key)
+    print("Ciphertext:", cipher_text)
+    print("Original/Decrypted Text:", originalText(cipher_text, key))
+
+
+# RSA algorithm
+def gcd(a, b):
+    while b != 0:
+        a, b = b, a % b
+    return a
+
+def modinv(a, m):
+    m0, x0, x1 = m, 0, 1
+    while a > 1:
+        q = a // m
+        m, a = a % m, m
+        x0, x1 = x1 - q * x0, x0
+    return x1 + m0 if x1 < 0 else x1
+
+def generate_keypair(p, q, e):
+    n = p * q
+    phi = (p - 1) * (q - 1)
+    if gcd(e, phi) != 1:
+        raise ValueError("e is not coprime with phi(n)")
+    d = modinv(e, phi)
+    public_key = (n, e)
+    private_key = (n, d)
+    return public_key, private_key
+
+# Given values
+p = 61
+q = 53
+e = 17
+public_key, private_key = generate_keypair(p, q, e)
+print("Public Key (n, e):", public_key)
+print("Private Key (n, d):", private_key)
+print("Private Key output after calculation is", private_key[1])
+
+
+# Diffie Hellman Algorithm
+def generate_key(p,g,private_key):
+    public_key=pow(g,private_key,p)
+    return public_key
+def shared_secret_key(public_key,private_key,p):
+    secret_key=pow(public_key,private_key,p)
+    return secret_key
+p=23
+g=9
+private_key_alice=4
+private_key_bob=3
+public_key_alice=generate_key(p,g,private_key_alice)
+public_key_bob=generate_key(p,g,private_key_bob)
+shared_secret_alice=shared_secret_key(public_key_bob,private_key_alice,p)
+shared_secret_bob=shared_secret_key(public_key_alice,private_key_bob,p)
+print(p)
+print(9)
+print(private_key_alice)
+print(private_key_bob)
+print(shared_secret_alice)
+print(shared_secret_bob)
+
+
+# SHA algorithm
+import hashlib
+def sha1_hash(input_string):
+    sha1=hashlib.sha1()
+    sha1.update(input_string.encode('utf-8'))
+    hash_string=sha1.hexdigest()
+    return hash_string
+input="this is me"
+result=sha1_hash(input)
+print(result)
+
+# ceaser cipher
+def encrypt(text, s):
+    result = ""
+    for i in range(len(text)):
+        char = text[i]
+        if char.isupper():
+            result += chr((ord(char) + s - 65) % 26 + 65)
+        else:
+            result += chr((ord(char) + s - 97) % 26 + 97)
+        
+    return result
+
+text = "roonie"
+k = 3
+encrypt(text, k)
+
+
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import dsa
+from cryptography.hazmat.backends import default_backend
+
+def generate_dsa_key_pair():
+    private_key = dsa.generate_private_key(key_size=2048, backend=default_backend())
+    public_key = private_key.public_key()
+    return private_key, public_key
+
+def sign_message(private_key, message):
+    signature = private_key.sign(message, hashes.SHA256())
+    return signature
+
+def verify_signature(public_key, message, signature):
+    try:
+        public_key.verify(signature, message, hashes.SHA256())
+        print("Verification successful")
+        return True
+    except:
+        print("Verification failed")
+        return False
+
+private_key, public_key = generate_dsa_key_pair()
+message = b"this is a message"
+print("Input message:", message.decode("utf-8"))
+
+signature = sign_message(private_key, message)
+print("Digital signature:", signature.hex())
+
+verify_signature(public_key, message, signature)
